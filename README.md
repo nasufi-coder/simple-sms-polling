@@ -21,14 +21,7 @@ A lightweight SMS aggregation service that polls Twilio for incoming messages an
 
 ## Quick Start
 
-1. **Clone and Install**
-   ```bash
-   git clone <your-repo>
-   cd SMSPollingSimple
-   npm install
-   ```
-
-2. **Configure Environment**
+1. **Configure Environment**
    ```bash
    cp .env.example .env
    ```
@@ -41,14 +34,14 @@ A lightweight SMS aggregation service that polls Twilio for incoming messages an
    PORT=3002
    ```
 
-3. **Run the Service**
+2. **Run the Service**
    ```bash
    npm start
    # or for development
    npm run dev
    ```
 
-4. **Test the API**
+3. **Test the API**
    ```bash
    curl http://localhost:3002/api/status
    ```

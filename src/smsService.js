@@ -1,4 +1,4 @@
-const twilio = require('twilio');
+const plivo = require('plivo');
 const { v4: uuidv4 } = require('uuid');
 
 class SimpleSmsService {
@@ -14,17 +14,17 @@ class SimpleSmsService {
 
   async connect() {
     try {
-      this.client = twilio(this.config.accountSid, this.config.authToken);
+      this.client = new plivo.Client(this.config.authId, this.config.authToken);
       
       // Test connection by fetching account info
-      await this.client.api.accounts(this.config.accountSid).fetch();
+      await this.client.account.get();
       
-      console.log(`Connected to Twilio for ${this.config.phoneNumber}`);
+      console.log(`Connected to Plivo for ${this.config.phoneNumber}`);
       this.isConnected = true;
       this.startPolling();
       return Promise.resolve();
     } catch (error) {
-      console.error('Twilio connection error:', error);
+      console.error('Plivo connection error:', error);
       this.isConnected = false;
       return Promise.reject(error);
     }
@@ -52,11 +52,18 @@ class SimpleSmsService {
     }
 
     try {
-      const messages = await this.client.messages.list({
-        to: this.config.phoneNumber,
-        dateSent: this.getDateFilter()
+      // Get messages from the last 5 minutes
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+      const dateFilter = fiveMinutesAgo.toISOString().split('T')[0]; // YYYY-MM-DD format
+      
+      const response = await this.client.messages.list({
+        dst: this.config.phoneNumber,
+        message_time__gte: dateFilter,
+        limit: 20
       });
 
+      const messages = response.objects || [];
+      
       // Process messages in reverse order (oldest first)
       const newMessages = messages.reverse();
       
@@ -74,21 +81,15 @@ class SimpleSmsService {
     }
   }
 
-  getDateFilter() {
-    // Get messages from the last 5 minutes to avoid missing any
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    return fiveMinutesAgo;
-  }
-
   async processMessage(message) {
     try {
       const sms = {
         id: uuidv4(),
         phoneNumber: this.config.phoneNumber,
-        fromNumber: message.from,
-        bodyText: message.body || '',
-        dateSent: message.dateSent?.toISOString() || new Date().toISOString(),
-        messageSid: message.sid
+        fromNumber: message.src,
+        bodyText: message.text || '',
+        dateSent: message.message_time || new Date().toISOString(),
+        messageSid: message.message_uuid
       };
 
       const inserted = await this.database.insertSms(sms);
@@ -134,13 +135,13 @@ class SimpleSmsService {
     console.error('SMS Service error:', error.message);
     
     // For rate limiting or temporary errors, continue polling
-    if (error.code === 429 || error.status === 429) {
+    if (error.status === 429) {
       console.log('Rate limited, continuing to poll...');
       return;
     }
     
     // For authentication errors, stop polling
-    if (error.code === 20003 || error.status === 401) {
+    if (error.status === 401 || error.status === 403) {
       console.error('Authentication failed, stopping polling');
       this.stopPolling();
       this.isConnected = false;

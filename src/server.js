@@ -11,9 +11,9 @@ const database = new SimpleDatabase();
 
 // SMS configuration
 const smsConfig = {
-  accountSid: process.env.TWILIO_ACCOUNT_SID,
-  authToken: process.env.TWILIO_AUTH_TOKEN,
-  phoneNumber: process.env.TWILIO_PHONE_NUMBER
+  authId: process.env.PLIVO_AUTH_ID,
+  authToken: process.env.PLIVO_AUTH_TOKEN,
+  phoneNumber: process.env.PLIVO_PHONE_NUMBER
 };
 
 // Initialize SMS service
@@ -137,8 +137,8 @@ app.get('/', (req, res) => {
 async function startService() {
   try {
     // Validate required environment variables
-    if (!smsConfig.accountSid || !smsConfig.authToken || !smsConfig.phoneNumber) {
-      throw new Error('Missing required Twilio configuration. Check TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER environment variables.');
+    if (!smsConfig.authId || !smsConfig.authToken || !smsConfig.phoneNumber) {
+      throw new Error('Missing required Plivo configuration. Check PLIVO_AUTH_ID, PLIVO_AUTH_TOKEN, and PLIVO_PHONE_NUMBER environment variables.');
     }
 
     await smsService.connect();
@@ -157,7 +157,7 @@ async function startService() {
     
   } catch (error) {
     console.error('Failed to start SMS service:', error);
-    console.error('Make sure your Twilio credentials are configured in the .env file');
+    console.error('Make sure your Plivo credentials are configured in the .env file');
   }
 }
 

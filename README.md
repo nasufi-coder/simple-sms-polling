@@ -1,6 +1,6 @@
 # SMS Polling Simple
 
-A lightweight SMS aggregation service that polls Twilio for incoming messages and extracts 2FA codes automatically.
+A lightweight SMS aggregation service that polls Plivo for incoming messages and extracts 2FA codes automatically.
 
 ## Features
 
@@ -14,8 +14,8 @@ A lightweight SMS aggregation service that polls Twilio for incoming messages an
 ## Prerequisites
 
 - Node.js 16+ 
-- Twilio account with:
-  - Account SID
+- Plivo account with:
+  - Auth ID
   - Auth Token
   - Phone number (for receiving SMS)
 
@@ -26,11 +26,11 @@ A lightweight SMS aggregation service that polls Twilio for incoming messages an
    cp .env.example .env
    ```
    
-   Edit `.env` with your Twilio credentials:
+   Edit `.env` with your Plivo credentials:
    ```env
-   TWILIO_ACCOUNT_SID=your_account_sid_here
-   TWILIO_AUTH_TOKEN=your_auth_token_here  
-   TWILIO_PHONE_NUMBER=+1234567890
+   PLIVO_AUTH_ID=your_auth_id_here
+   PLIVO_AUTH_TOKEN=your_auth_token_here  
+   PLIVO_PHONE_NUMBER=+1234567890
    PORT=3002
    ```
 
@@ -149,20 +149,20 @@ pm2 startup
 ### Environment Variables
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `TWILIO_ACCOUNT_SID` | Your Twilio Account SID | Yes |
-| `TWILIO_AUTH_TOKEN` | Your Twilio Auth Token | Yes |
-| `TWILIO_PHONE_NUMBER` | Your Twilio phone number (with +) | Yes |
+| `PLIVO_AUTH_ID` | Your Plivo Auth ID | Yes |
+| `PLIVO_AUTH_TOKEN` | Your Plivo Auth Token | Yes |
+| `PLIVO_PHONE_NUMBER` | Your Plivo phone number (with +) | Yes |
 | `PORT` | Server port (default: 3002) | No |
 
-### Twilio Setup
-1. Sign up at [twilio.com](https://twilio.com)
-2. Get a phone number from Twilio Console
-3. Find your Account SID and Auth Token in Console
+### Plivo Setup
+1. Sign up at [plivo.com](https://plivo.com)
+2. Get a phone number from Plivo Console
+3. Find your Auth ID and Auth Token in Console
 4. Add these to your `.env` file
 
 ## Cost Estimation
 
-**Twilio Pricing (US)**:
+**Plivo Pricing (US)**:
 - Phone number rental: ~$1.00/month
 - Incoming SMS: ~$0.0075 per message
 - API calls: Free
@@ -193,15 +193,15 @@ pm2 startup
 
 ### Service Not Starting
 ```bash
-# Check Twilio credentials
-curl -u $TWILIO_ACCOUNT_SID:$TWILIO_AUTH_TOKEN \
-  https://api.twilio.com/2010-04-01/Accounts/$TWILIO_ACCOUNT_SID.json
+# Check Plivo credentials
+curl -u $PLIVO_AUTH_ID:$PLIVO_AUTH_TOKEN \
+  https://api.plivo.com/v1/Account/$PLIVO_AUTH_ID/
 ```
 
 ### No Messages Received
 - Verify phone number format includes country code (+1234567890)
-- Check Twilio Console for incoming message logs
-- Ensure SMS are being sent to your Twilio number
+- Check Plivo Console for incoming message logs
+- Ensure SMS are being sent to your Plivo number
 
 ### Codes Not Extracted
 - Check message format matches extraction patterns
@@ -223,10 +223,10 @@ curl http://localhost:3002/api/status
 
 ## Security Notes
 
-- Keep Twilio credentials secure and never commit to git
+- Keep Plivo credentials secure and never commit to git
 - Use environment variables for all sensitive configuration
 - Consider IP whitelisting for production deployments
-- Regularly rotate Twilio Auth Tokens
+- Regularly rotate Plivo Auth Tokens
 
 ## License
 

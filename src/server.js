@@ -1,5 +1,7 @@
 require('dotenv').config();
 const express = require('express');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpecs = require('./swagger');
 const SimpleDatabase = require('./database');
 const SimpleSmsService = require('./smsService');
 
@@ -21,6 +23,51 @@ const smsService = new SimpleSmsService(smsConfig, database);
 
 app.use(express.json());
 
+// Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'SMS Polling API (Plivo)'
+}));
+
+/**
+ * @swagger
+ * /api/last-sms:
+ *   get:
+ *     summary: Get the most recent SMS message
+ *     description: Retrieves the last SMS message received by the service
+ *     tags: [SMS Messages]
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *             examples:
+ *               with_data:
+ *                 summary: SMS message found
+ *                 value:
+ *                   success: true
+ *                   data:
+ *                     id: "uuid-123"
+ *                     phone_number: "+1234567890"
+ *                     from_number: "+1987654321"
+ *                     body_text: "Your verification code is 123456"
+ *                     date_sent: "2024-01-01T12:00:00.000Z"
+ *                     message_sid: "uuid-456"
+ *               no_data:
+ *                 summary: No SMS messages found
+ *                 value:
+ *                   success: true
+ *                   data: null
+ *                   message: "No SMS messages found"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 // Get last SMS message
 app.get('/api/last-sms', async (req, res) => {
   try {
@@ -48,6 +95,44 @@ app.get('/api/last-sms', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/last-code:
+ *   get:
+ *     summary: Get the most recent unused 2FA code
+ *     description: Retrieves the last unused 2FA code and marks it as used
+ *     tags: [2FA Codes]
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *             examples:
+ *               with_code:
+ *                 summary: Code found
+ *                 value:
+ *                   success: true
+ *                   data:
+ *                     id: 1
+ *                     code: "123456"
+ *                     body_text: "Your verification code is 123456"
+ *                     from_number: "+1987654321"
+ *                     created_at: "2024-01-01T12:00:00.000Z"
+ *               no_code:
+ *                 summary: No codes found
+ *                 value:
+ *                   success: true
+ *                   data: null
+ *                   message: "No codes found"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 // Get last 2FA code
 app.get('/api/last-code', async (req, res) => {
   try {
@@ -75,6 +160,52 @@ app.get('/api/last-code', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/last-code-from/{fromNumber}:
+ *   get:
+ *     summary: Get the most recent unused code from specific sender
+ *     description: Retrieves the last unused 2FA code from a specific phone number and marks it as used
+ *     tags: [2FA Codes]
+ *     parameters:
+ *       - in: path
+ *         name: fromNumber
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Phone number of the sender (with or without + prefix)
+ *         example: "+1987654321"
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *             examples:
+ *               with_code:
+ *                 summary: Code found from sender
+ *                 value:
+ *                   success: true
+ *                   data:
+ *                     id: 1
+ *                     code: "123456"
+ *                     body_text: "Your verification code is 123456"
+ *                     from_number: "+1987654321"
+ *                     created_at: "2024-01-01T12:00:00.000Z"
+ *               no_code:
+ *                 summary: No codes found from this sender
+ *                 value:
+ *                   success: true
+ *                   data: null
+ *                   message: "No codes found from this sender"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 // Get last code from specific sender
 app.get('/api/last-code-from/:fromNumber', async (req, res) => {
   try {
@@ -107,6 +238,30 @@ app.get('/api/last-code-from/:fromNumber', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/status:
+ *   get:
+ *     summary: Get service status
+ *     description: Returns the current status of the SMS polling service
+ *     tags: [Service Status]
+ *     responses:
+ *       200:
+ *         description: Service status information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ServiceStatus'
+ *             example:
+ *               success: true
+ *               status: "running"
+ *               sms_service:
+ *                 connected: true
+ *                 phoneNumber: "+1234567890"
+ *                 polling: true
+ *                 lastChecked: "2024-01-01T12:00:00.000Z"
+ *               timestamp: "2024-01-01T12:00:00.000Z"
+ */
 // Service status
 app.get('/api/status', (req, res) => {
   const status = smsService.getStatus();
@@ -118,6 +273,40 @@ app.get('/api/status', (req, res) => {
   });
 });
 
+/**
+ * @swagger
+ * /:
+ *   get:
+ *     summary: Service information
+ *     description: Returns basic information about the SMS polling service and available endpoints
+ *     tags: [Service Info]
+ *     responses:
+ *       200:
+ *         description: Service information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Simple SMS Polling Service"
+ *                 version:
+ *                   type: string
+ *                   example: "1.0.0"
+ *                 endpoints:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example:
+ *                     - "GET /api/last-sms - Get last SMS message"
+ *                     - "GET /api/last-code - Get last 2FA code"
+ *                     - "GET /api/last-code-from/:fromNumber - Get last code from specific sender"
+ *                     - "GET /api/status - Service status"
+ */
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({

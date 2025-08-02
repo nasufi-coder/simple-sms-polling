@@ -4,11 +4,12 @@ A lightweight SMS aggregation service that polls Plivo for incoming messages and
 
 ## Features
 
-- **Automatic SMS Polling**: Polls Twilio API every 30 seconds for new messages
+- **Automatic SMS Polling**: Polls Plivo API every 30 seconds for new messages
 - **2FA Code Extraction**: Automatically extracts verification codes using multiple patterns
 - **Multi-Sender Support**: Get codes from specific phone numbers
 - **SQLite Storage**: Stores messages and codes locally
 - **Simple API**: RESTful endpoints for easy integration
+- **Interactive Documentation**: Swagger UI for API testing and documentation
 - **Auto Cleanup**: Removes old messages (7+ days) automatically
 
 ## Prerequisites
@@ -44,6 +45,11 @@ A lightweight SMS aggregation service that polls Plivo for incoming messages and
 3. **Test the API**
    ```bash
    curl http://localhost:3002/api/status
+   ```
+
+4. **View API Documentation**
+   ```
+   http://localhost:3002/api-docs
    ```
 
 ## API Endpoints
@@ -153,6 +159,7 @@ pm2 startup
 | `PLIVO_AUTH_TOKEN` | Your Plivo Auth Token | Yes |
 | `PLIVO_PHONE_NUMBER` | Your Plivo phone number (with +) | Yes |
 | `PORT` | Server port (default: 3002) | No |
+| `SWAGGER_BASE_URL` | Base URL for Swagger docs (auto-detects if not set) | No |
 
 ### Plivo Setup
 1. Sign up at [plivo.com](https://plivo.com)

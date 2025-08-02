@@ -1,7 +1,7 @@
 {
   "name": "sms-polling-simple",
   "version": "1.0.0",
-  "description": "Simple SMS aggregation service with minimal endpoints using Twilio",
+  "description": "Simple SMS aggregation service with minimal endpoints using Plivo",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
@@ -15,7 +15,9 @@
     "plivo": "^4.58.0",
     "sqlite3": "^5.1.6",
     "dotenv": "^16.3.1",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^4.6.3"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

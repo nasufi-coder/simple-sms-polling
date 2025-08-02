@@ -9,6 +9,7 @@ A lightweight SMS aggregation service that polls Twilio for incoming messages an
 - **Multi-Sender Support**: Get codes from specific phone numbers
 - **SQLite Storage**: Stores messages and codes locally
 - **Simple API**: RESTful endpoints for easy integration
+- **Interactive Documentation**: Swagger UI for API testing and documentation
 - **Auto Cleanup**: Removes old messages (7+ days) automatically
 
 ## Prerequisites
@@ -44,6 +45,11 @@ A lightweight SMS aggregation service that polls Twilio for incoming messages an
 3. **Test the API**
    ```bash
    curl http://localhost:3002/api/status
+   ```
+
+4. **View API Documentation**
+   ```
+   http://localhost:3002/api-docs
    ```
 
 ## API Endpoints
@@ -153,6 +159,7 @@ pm2 startup
 | `TWILIO_AUTH_TOKEN` | Your Twilio Auth Token | Yes |
 | `TWILIO_PHONE_NUMBER` | Your Twilio phone number (with +) | Yes |
 | `PORT` | Server port (default: 3002) | No |
+| `SWAGGER_BASE_URL` | Base URL for Swagger docs (auto-detects if not set) | No |
 
 ### Twilio Setup
 1. Sign up at [twilio.com](https://twilio.com)

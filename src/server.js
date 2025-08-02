@@ -277,49 +277,16 @@ app.get('/api/status', (req, res) => {
  * @swagger
  * /:
  *   get:
- *     summary: Service information
- *     description: Returns basic information about the SMS polling service and available endpoints
+ *     summary: Redirect to API documentation
+ *     description: Redirects to the interactive Swagger API documentation
  *     tags: [Service Info]
  *     responses:
- *       200:
- *         description: Service information
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Simple SMS Polling Service"
- *                 version:
- *                   type: string
- *                   example: "1.0.0"
- *                 endpoints:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example:
- *                     - "GET /api/last-sms - Get last SMS message"
- *                     - "GET /api/last-code - Get last 2FA code"
- *                     - "GET /api/last-code-from/:fromNumber - Get last code from specific sender"
- *                     - "GET /api/status - Service status"
+ *       302:
+ *         description: Redirect to API documentation
  */
-// Root endpoint
+// Root endpoint - redirect to API docs
 app.get('/', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Simple SMS Polling Service',
-    version: '1.0.0',
-    endpoints: [
-      'GET /api/last-sms - Get last SMS message',
-      'GET /api/last-code - Get last 2FA code',
-      'GET /api/last-code-from/:fromNumber - Get last code from specific sender',
-      'GET /api/status - Service status'
-    ]
-  });
+  res.redirect('/api-docs');
 });
 
 // Start SMS service

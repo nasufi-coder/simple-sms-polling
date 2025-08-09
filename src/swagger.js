@@ -4,16 +4,16 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'SMS Polling Simple API (Plivo)',
+      title: 'SMS Polling Simple API (Proxidize)',
       version: '1.0.0',
-      description: 'A lightweight SMS aggregation service that polls Plivo for incoming messages and extracts 2FA codes automatically.',
+      description: 'A lightweight SMS aggregation service that polls Proxidize for incoming messages and extracts 2FA codes automatically. **Send SMS/OTP to: +19147600318**',
       contact: {
         email: 'patrik.nasufi@gmail.com'
       }
     },
     servers: [
       {
-        url: process.env.SWAGGER_BASE_URL || 'http://localhost:3002',
+        url: process.env.SWAGGER_BASE_URL || 'http://localhost:3001',
         description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server'
       }
     ],
@@ -28,7 +28,7 @@ const options = {
             },
             phone_number: {
               type: 'string',
-              description: 'Your Plivo phone number'
+              description: 'Your Proxidize modem phone number'
             },
             from_number: {
               type: 'string',
@@ -45,7 +45,7 @@ const options = {
             },
             message_sid: {
               type: 'string',
-              description: 'Plivo message UUID'
+              description: 'Proxidize message ID'
             },
             created_at: {
               type: 'string',
@@ -99,11 +99,11 @@ const options = {
               properties: {
                 connected: {
                   type: 'boolean',
-                  description: 'Connection status to Plivo'
+                  description: 'Connection status to Proxidize'
                 },
                 phoneNumber: {
                   type: 'string',
-                  description: 'Your Plivo phone number'
+                  description: 'Your Proxidize modem phone number'
                 },
                 polling: {
                   type: 'boolean',

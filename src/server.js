@@ -6,16 +6,17 @@ const SimpleDatabase = require('./database');
 const SimpleSmsService = require('./smsService');
 
 const app = express();
-const port = process.env.PORT || 3002;
+const port = process.env.PORT || 3001;
 
 // Initialize database
 const database = new SimpleDatabase();
 
 // SMS configuration
 const smsConfig = {
-  authId: process.env.PLIVO_AUTH_ID,
-  authToken: process.env.PLIVO_AUTH_TOKEN,
-  phoneNumber: process.env.PLIVO_PHONE_NUMBER
+  baseUrl: process.env.PROXIDIZE_BASE_URL || 'http://154.29.79.187',
+  token: process.env.PROXIDIZE_TOKEN || '9aa901942439ca27edfdd84c1d46d23d3683443d',
+  modemIndex: process.env.PROXIDIZE_MODEM_INDEX || '1',
+  phoneNumber: process.env.PROXIDIZE_PHONE_NUMBER || '+19147600318'
 };
 
 // Initialize SMS service
@@ -26,7 +27,7 @@ app.use(express.json());
 // Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
   customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'SMS Polling API (Plivo)'
+  customSiteTitle: 'SMS Polling API (Proxidize)'
 }));
 
 /**
@@ -275,6 +276,44 @@ app.get('/api/status', (req, res) => {
 
 /**
  * @swagger
+ * /api/info:
+ *   get:
+ *     summary: Get service information
+ *     description: Returns information about the SMS service including the phone number to send OTPs to
+ *     tags: [Service Info]
+ *     responses:
+ *       200:
+ *         description: Service information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 service:
+ *                   type: string
+ *                   example: "SMS Polling Service (Proxidize)"
+ *                 version:
+ *                   type: string
+ *                   example: "1.0.0"
+ *                 sms_number:
+ *                   type: string
+ *                   example: "+19147600318"
+ *                   description: "Send your SMS/OTP codes to this number"
+ *                 instructions:
+ *                   type: string
+ *                   example: "Send SMS messages to +19147600318 to receive OTP codes via API"
+ *                 endpoints:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["/api/last-sms", "/api/last-code", "/api/status"]
+ */
+
+/**
+ * @swagger
  * /:
  *   get:
  *     summary: Redirect to API documentation
@@ -284,6 +323,25 @@ app.get('/api/status', (req, res) => {
  *       302:
  *         description: Redirect to API documentation
  */
+// Service info endpoint
+app.get('/api/info', (req, res) => {
+  res.json({
+    success: true,
+    service: 'SMS Polling Service (Proxidize)',
+    version: '1.0.0',
+    sms_number: smsConfig.phoneNumber,
+    instructions: `Send SMS messages to ${smsConfig.phoneNumber} to receive OTP codes via API`,
+    endpoints: [
+      '/api/last-sms',
+      '/api/last-code', 
+      '/api/last-code-from/:fromNumber',
+      '/api/status',
+      '/api/info'
+    ],
+    documentation: '/api-docs'
+  });
+});
+
 // Root endpoint - redirect to API docs
 app.get('/', (req, res) => {
   res.redirect('/api-docs');
@@ -293,8 +351,8 @@ app.get('/', (req, res) => {
 async function startService() {
   try {
     // Validate required environment variables
-    if (!smsConfig.authId || !smsConfig.authToken || !smsConfig.phoneNumber) {
-      throw new Error('Missing required Plivo configuration. Check PLIVO_AUTH_ID, PLIVO_AUTH_TOKEN, and PLIVO_PHONE_NUMBER environment variables.');
+    if (!smsConfig.baseUrl || !smsConfig.token || !smsConfig.phoneNumber) {
+      throw new Error('Missing required Proxidize configuration. Check PROXIDIZE_BASE_URL, PROXIDIZE_TOKEN, and PROXIDIZE_PHONE_NUMBER environment variables.');
     }
 
     await smsService.connect();
@@ -313,7 +371,7 @@ async function startService() {
     
   } catch (error) {
     console.error('Failed to start SMS service:', error);
-    console.error('Make sure your Plivo credentials are configured in the .env file');
+    console.error('Make sure your Proxidize credentials are configured in the .env file');
   }
 }
 

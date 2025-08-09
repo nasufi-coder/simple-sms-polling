@@ -1,11 +1,9 @@
-const twilio = require('twilio');
 const { v4: uuidv4 } = require('uuid');
 
 class SimpleSmsService {
   constructor(config, database) {
     this.config = config;
     this.database = database;
-    this.client = null;
     this.isConnected = false;
     this.pollingInterval = null;
     this.pollingFrequency = 30000; // 30 seconds
@@ -14,17 +12,19 @@ class SimpleSmsService {
 
   async connect() {
     try {
-      this.client = twilio(this.config.accountSid, this.config.authToken);
+      // Test connection by fetching modem info
+      const response = await this.makeProxidizeRequest('getinfo');
       
-      // Test connection by fetching account info
-      await this.client.api.accounts(this.config.accountSid).fetch();
+      if (!response.ok) {
+        throw new Error(`Connection test failed: ${response.status}`);
+      }
       
-      console.log(`Connected to Twilio for ${this.config.phoneNumber}`);
+      console.log(`Connected to Proxidize for ${this.config.phoneNumber}`);
       this.isConnected = true;
       this.startPolling();
       return Promise.resolve();
     } catch (error) {
-      console.error('Twilio connection error:', error);
+      console.error('Proxidize connection error:', error);
       this.isConnected = false;
       return Promise.reject(error);
     }
@@ -46,19 +46,32 @@ class SimpleSmsService {
   }
 
   async fetchNewMessages() {
-    if (!this.isConnected || !this.client) {
+    if (!this.isConnected) {
       console.warn('Cannot fetch messages: not connected');
       return;
     }
 
     try {
-      const messages = await this.client.messages.list({
-        to: this.config.phoneNumber,
-        dateSent: this.getDateFilter()
-      });
+      // Get SMS messages from Proxidize
+      const response = await this.makeProxidizeRequest(`sms/get?index=${this.config.modemIndex}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch messages: ${response.status}`);
+      }
 
+      const data = await response.json();
+      const messages = data.sms_messages || [];
+      
+      // Filter messages to only include those from the last 24 hours  
+      const twentyFourHoursAgo = new Date(Date.now() - (24 * 60 * 60 * 1000));
+      const recentMessages = messages.filter(message => {
+        if (!message.timestamp) return false;
+        const messageDate = new Date(message.timestamp * 1000);
+        return messageDate >= twentyFourHoursAgo;
+      });
+      
       // Process messages in reverse order (oldest first)
-      const newMessages = messages.reverse();
+      const newMessages = recentMessages.reverse();
       
       for (const message of newMessages) {
         await this.processMessage(message);
@@ -74,21 +87,20 @@ class SimpleSmsService {
     }
   }
 
-  getDateFilter() {
-    // Get messages from the last 5 minutes to avoid missing any
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    return fiveMinutesAgo;
-  }
-
   async processMessage(message) {
     try {
+      // Convert timestamp to ISO string
+      const dateString = message.timestamp 
+        ? new Date(message.timestamp * 1000).toISOString()
+        : new Date().toISOString();
+
       const sms = {
         id: uuidv4(),
         phoneNumber: this.config.phoneNumber,
-        fromNumber: message.from,
-        bodyText: message.body || '',
-        dateSent: message.dateSent?.toISOString() || new Date().toISOString(),
-        messageSid: message.sid
+        fromNumber: (message.phone && message.phone[0]) || 'unknown',
+        bodyText: message.content || '',
+        dateSent: dateString,
+        messageSid: String(message.sms_id && message.sms_id[0]) || uuidv4()
       };
 
       const inserted = await this.database.insertSms(sms);
@@ -130,17 +142,29 @@ class SimpleSmsService {
     }
   }
 
+  async makeProxidizeRequest(endpoint) {
+    const url = `${this.config.baseUrl}/api/${endpoint}`;
+    
+    return fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Token ${this.config.token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+  }
+
   handleConnectionError(error) {
     console.error('SMS Service error:', error.message);
     
     // For rate limiting or temporary errors, continue polling
-    if (error.code === 429 || error.status === 429) {
+    if (error.status === 429) {
       console.log('Rate limited, continuing to poll...');
       return;
     }
     
     // For authentication errors, stop polling
-    if (error.code === 20003 || error.status === 401) {
+    if (error.status === 401 || error.status === 403) {
       console.error('Authentication failed, stopping polling');
       this.stopPolling();
       this.isConnected = false;
@@ -167,7 +191,6 @@ class SimpleSmsService {
   disconnect() {
     this.stopPolling();
     this.isConnected = false;
-    this.client = null;
     console.log('SMS service disconnected');
   }
 }

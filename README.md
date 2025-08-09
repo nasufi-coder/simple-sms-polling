@@ -1,10 +1,19 @@
 # SMS Polling Simple
 
-A lightweight SMS aggregation service that polls Twilio for incoming messages and extracts 2FA codes automatically.
+A lightweight SMS aggregation service that polls Proxidize for incoming messages and extracts 2FA codes automatically.
+
+## SMS/OTP Number
+
+**Send your 2FA codes and verification messages to:**
+```
++19147600318
+```
+
+This number will automatically capture and extract verification codes, making them available via REST API.
 
 ## Features
 
-- **Automatic SMS Polling**: Polls Twilio API every 30 seconds for new messages
+- **Automatic SMS Polling**: Polls Proxidize API every 30 seconds for new messages
 - **2FA Code Extraction**: Automatically extracts verification codes using multiple patterns
 - **Multi-Sender Support**: Get codes from specific phone numbers
 - **SQLite Storage**: Stores messages and codes locally
@@ -15,10 +24,10 @@ A lightweight SMS aggregation service that polls Twilio for incoming messages an
 ## Prerequisites
 
 - Node.js 16+ 
-- Twilio account with:
-  - Account SID
-  - Auth Token
-  - Phone number (for receiving SMS)
+- Proxidize setup with:
+  - API Token
+  - Base URL of your Proxidize instance
+  - Modem with phone number (for receiving SMS)
 
 ## Quick Start
 
@@ -27,12 +36,13 @@ A lightweight SMS aggregation service that polls Twilio for incoming messages an
    cp .env.example .env
    ```
    
-   Edit `.env` with your Twilio credentials:
+   Edit `.env` with your Proxidize credentials:
    ```env
-   TWILIO_ACCOUNT_SID=your_account_sid_here
-   TWILIO_AUTH_TOKEN=your_auth_token_here  
-   TWILIO_PHONE_NUMBER=+1234567890
-   PORT=3002
+   PROXIDIZE_BASE_URL=http://your-proxidize-instance.com
+   PROXIDIZE_TOKEN=your_token_here
+   PROXIDIZE_MODEM_INDEX=1
+   PROXIDIZE_PHONE_NUMBER=+19147600318
+   PORT=3001
    ```
 
 2. **Run the Service**
@@ -44,18 +54,36 @@ A lightweight SMS aggregation service that polls Twilio for incoming messages an
 
 3. **Test the API**
    ```bash
-   curl http://localhost:3002/api/status
+   curl http://localhost:3001/api/status
    ```
 
 4. **View API Documentation**
    ```
-   http://localhost:3002/api-docs
+   http://localhost:3001/api-docs
    ```
+
+5. **Send SMS to Receive OTPs**
+   ```
+   SMS/OTP Number: +19147600318
+   ```
+   Send your 2FA codes and verification messages to this number to retrieve them via API.
 
 ## API Endpoints
 
 ### `GET /`
-Service information and available endpoints
+Redirects to API documentation
+
+### `GET /api/info`
+Service information including SMS number for receiving OTPs
+```json
+{
+  "success": true,
+  "service": "SMS Polling Service (Proxidize)",
+  "sms_number": "+19147600318",
+  "instructions": "Send SMS messages to +19147600318 to receive OTP codes via API",
+  "endpoints": ["/api/last-sms", "/api/last-code", "/api/status"]
+}
+```
 
 ### `GET /api/status`
 Returns service status and connection info
@@ -65,7 +93,7 @@ Returns service status and connection info
   "status": "running",
   "sms_service": {
     "connected": true,
-    "phoneNumber": "+1234567890",
+    "phoneNumber": "+19147600318",
     "polling": true,
     "lastChecked": "2024-01-01T12:00:00.000Z"
   }
@@ -79,8 +107,8 @@ Get the most recent SMS message
   "success": true,
   "data": {
     "id": "uuid-here",
-    "phone_number": "+1234567890",
-    "from_number": "+1987654321",
+    "phone_number": "+19147600318",
+    "from_number": "+19142303149",
     "body_text": "Your verification code is 123456",
     "date_sent": "2024-01-01T12:00:00.000Z"
   }
@@ -96,7 +124,7 @@ Get the most recent unused 2FA code
     "id": 1,
     "code": "123456",
     "body_text": "Your verification code is 123456",
-    "from_number": "+1987654321",
+    "from_number": "+19142303149",
     "created_at": "2024-01-01T12:00:00.000Z"
   }
 }
@@ -105,7 +133,7 @@ Get the most recent unused 2FA code
 ### `GET /api/last-code-from/:fromNumber`
 Get the most recent unused code from a specific sender
 ```bash
-curl http://localhost:3002/api/last-code-from/+1987654321
+curl http://localhost:3001/api/last-code-from/+19142303149
 ```
 
 ## Code Extraction Patterns
@@ -133,7 +161,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production
 COPY . .
-EXPOSE 3002
+EXPOSE 3001
 CMD ["npm", "start"]
 ```
 
@@ -155,39 +183,42 @@ pm2 startup
 ### Environment Variables
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `TWILIO_ACCOUNT_SID` | Your Twilio Account SID | Yes |
-| `TWILIO_AUTH_TOKEN` | Your Twilio Auth Token | Yes |
-| `TWILIO_PHONE_NUMBER` | Your Twilio phone number (with +) | Yes |
-| `PORT` | Server port (default: 3002) | No |
+| `PROXIDIZE_BASE_URL` | Your Proxidize instance URL | Yes |
+| `PROXIDIZE_TOKEN` | Your Proxidize API token | Yes |
+| `PROXIDIZE_MODEM_INDEX` | Modem index to use (e.g., 1) | Yes |
+| `PROXIDIZE_PHONE_NUMBER` | Your modem's phone number (with +) | Yes |
+| `PORT` | Server port (default: 3001) | No |
 | `SWAGGER_BASE_URL` | Base URL for Swagger docs (auto-detects if not set) | No |
 
-### Twilio Setup
-1. Sign up at [twilio.com](https://twilio.com)
-2. Get a phone number from Twilio Console
-3. Find your Account SID and Auth Token in Console
-4. Add these to your `.env` file
+### Proxidize Setup
+1. Set up your Proxidize instance (self-hosted or managed)
+2. Connect a modem/phone to your Proxidize setup
+3. Get your API token from the Proxidize dashboard
+4. Note your modem index (usually starts at 0 or 1)
+5. Add these credentials to your `.env` file
 
 ## Cost Estimation
 
-**Twilio Pricing (US)**:
-- Phone number rental: ~$1.00/month
-- Incoming SMS: ~$0.0075 per message
-- API calls: Free
+**Proxidize Costs**:
+- Hardware: One-time cost for modems/phones
+- Mobile plan: Varies by carrier (~$10-50/month per modem)
+- Data usage: Minimal for SMS polling
+- Proxidize software: Check their pricing
 
-**Example monthly cost for 100 received 2FA codes**:
-- Phone number: $1.00
-- SMS reception: $0.75
-- **Total: ~$1.75/month**
+**Example monthly cost**:
+- Mobile plan: ~$15-30/month
+- Data usage: <$1/month for API calls
+- **Total: ~$16-31/month per modem**
 
 ## Database Schema
 
 ### `sms_messages`
 - `id` - Unique message ID
-- `phone_number` - Your Twilio number
+- `phone_number` - Your Proxidize modem number
 - `from_number` - Sender's number
 - `body_text` - Message content
 - `date_sent` - When message was sent
-- `message_sid` - Twilio message ID
+- `message_sid` - Proxidize message ID
 
 ### `sms_codes`
 - `id` - Auto-increment ID
@@ -200,15 +231,16 @@ pm2 startup
 
 ### Service Not Starting
 ```bash
-# Check Twilio credentials
-curl -u $TWILIO_ACCOUNT_SID:$TWILIO_AUTH_TOKEN \
-  https://api.twilio.com/2010-04-01/Accounts/$TWILIO_ACCOUNT_SID.json
+# Check Proxidize API connection
+curl -H "Authorization: Token your_token_here" \
+  http://your-proxidize-instance.com/api/getinfo
 ```
 
 ### No Messages Received
-- Verify phone number format includes country code (+1234567890)
-- Check Twilio Console for incoming message logs
-- Ensure SMS are being sent to your Twilio number
+- Verify phone number format includes country code (+19147600318)
+- Check modem is connected and receiving SMS
+- Ensure SMS are being sent to your modem's phone number
+- Check modem index is correct (usually 1, not 0)
 
 ### Codes Not Extracted
 - Check message format matches extraction patterns
@@ -225,15 +257,16 @@ npm install
 npm run dev
 
 # Check service status
-curl http://localhost:3002/api/status
+curl http://localhost:3001/api/status
 ```
 
 ## Security Notes
 
-- Keep Twilio credentials secure and never commit to git
+- Keep Proxidize API token secure and never commit to git
 - Use environment variables for all sensitive configuration
 - Consider IP whitelisting for production deployments
-- Regularly rotate Twilio Auth Tokens
+- Regularly rotate Proxidize API tokens
+- Secure your Proxidize instance with proper authentication
 
 ## License
 
